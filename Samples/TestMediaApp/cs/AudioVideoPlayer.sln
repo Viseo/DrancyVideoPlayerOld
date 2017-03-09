@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AudioVideoPlayer", "AudioVideoPlayer\AudioVideoPlayer.csproj", "{C5B6373F-8F4C-4A56-9FBA-2BE20A5574FE}"
 EndProject
@@ -20,6 +20,8 @@ Global
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{C5B6373F-8F4C-4A56-9FBA-2BE20A5574FE}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{C5B6373F-8F4C-4A56-9FBA-2BE20A5574FE}.Debug|Any CPU.Build.0 = Debug|x86
+		{C5B6373F-8F4C-4A56-9FBA-2BE20A5574FE}.Debug|Any CPU.Deploy.0 = Debug|x86
 		{C5B6373F-8F4C-4A56-9FBA-2BE20A5574FE}.Debug|ARM.ActiveCfg = Debug|ARM
 		{C5B6373F-8F4C-4A56-9FBA-2BE20A5574FE}.Debug|ARM.Build.0 = Debug|ARM
 		{C5B6373F-8F4C-4A56-9FBA-2BE20A5574FE}.Debug|ARM.Deploy.0 = Debug|ARM
@@ -40,6 +42,7 @@ Global
 		{C5B6373F-8F4C-4A56-9FBA-2BE20A5574FE}.Release|x86.Build.0 = Release|x86
 		{C5B6373F-8F4C-4A56-9FBA-2BE20A5574FE}.Release|x86.Deploy.0 = Release|x86
 		{110DEDB3-F188-488E-B90B-C6F5DEFFCA0B}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{110DEDB3-F188-488E-B90B-C6F5DEFFCA0B}.Debug|Any CPU.Build.0 = Debug|Win32
 		{110DEDB3-F188-488E-B90B-C6F5DEFFCA0B}.Debug|ARM.ActiveCfg = Debug|ARM
 		{110DEDB3-F188-488E-B90B-C6F5DEFFCA0B}.Debug|ARM.Build.0 = Debug|ARM
 		{110DEDB3-F188-488E-B90B-C6F5DEFFCA0B}.Debug|x64.ActiveCfg = Debug|x64
