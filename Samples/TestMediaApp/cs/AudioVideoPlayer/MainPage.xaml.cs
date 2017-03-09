@@ -52,7 +52,7 @@ namespace AudioVideoPlayer
         private DispatcherTimer timer ;
         // AutoSkip
         // When the media ended, skip automatically to the next stream in the list 
-        private bool bAutoSkip = false;
+        private bool bAutoSkip = true;
         // Popup used to display picture in fullscreen mode
         private Popup picturePopup = null;
         enum WindowMediaState
@@ -190,16 +190,14 @@ namespace AudioVideoPlayer
             if (bAutoSkip)
                 PlayCurrentUrl();
 
+            fullscreen_Click(this, null);
+
             // Update control and play first video
             UpdateControls();
 
-
             // Display OS, Device information
             LogMessage(Information.SystemInformation.GetString());
-
         }
-
-
 
         /// <summary>
         /// Method OnNavigatedFrom
