@@ -98,6 +98,9 @@
     <Content Include="Assets\PHOTO.png" />
     <Content Include="DataModel\MediaData.json" />
     <None Include="AudioVideoPlayer_StoreKey.pfx" />
+    <Content Include="config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>

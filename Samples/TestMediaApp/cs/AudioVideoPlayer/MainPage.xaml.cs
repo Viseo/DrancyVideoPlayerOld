@@ -28,7 +28,10 @@ using AudioVideoPlayer.DataModel;
 using Windows.UI.Core;
 using Windows.UI.ViewManagement;
 using System.Reflection;
+using System.Threading.Tasks;
+using Windows.Storage;
 using Companion;
+using Newtonsoft.Json;
 
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -105,6 +108,8 @@ namespace AudioVideoPlayer
         private const string keyMediaUri = "MediaUri";
         private const string keyWindowState = "WindowState";
 
+        private string url;
+
         #endregion
 
         #region Initialization
@@ -167,12 +172,20 @@ namespace AudioVideoPlayer
             // Initialize the Companion mode (Remote or Player)
             InitializeCompanionMode();
 
+            await Task.Run(async () =>
+            {
+                var dataUri = new Uri("ms-appx:///config.json");
+                var file = await StorageFile.GetFileFromApplicationUriAsync(dataUri);
+                var config = JsonConvert.DeserializeObject<PlaylistConfiguration>(await FileIO.ReadTextAsync(file));
+                url = config.Url;
+                //var config = JsonConvert.DeserializeObject<PlaylistConfiguration>(File.ReadAllText(file));
+            });
 
             // Load Data
-            if (string.IsNullOrEmpty(MediaDataSource.MediaDataPath))
+            if (string.IsNullOrEmpty(MediaDataSource.MediaDataPath) && !string.IsNullOrWhiteSpace(url))
             {
-                LogMessage("MainPage Loading Data...");
-                await LoadingData(string.Empty);
+                LogMessage("MainPage Loading Data... with this url: " + url);
+                await LoadingData(url);
             }
 
             // Take into account the argument if file activated
@@ -377,7 +390,6 @@ namespace AudioVideoPlayer
         /// </summary>
         async System.Threading.Tasks.Task<bool> LoadingData(string path)
         {
-
             MediaDataGroup audio_video = null;
             string oldPath = MediaDataSource.MediaDataPath;
 
@@ -1230,6 +1242,7 @@ namespace AudioVideoPlayer
                 }
                 if (await LoadingData(file.Path) == false)
                     await LoadingData(string.Empty);
+
                 //Update control and play first video
                 UpdateControls();
                 PlayCurrentUrl();

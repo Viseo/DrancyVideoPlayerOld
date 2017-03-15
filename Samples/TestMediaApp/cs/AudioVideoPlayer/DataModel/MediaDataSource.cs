@@ -11,11 +11,14 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.Data.Json;
 using Windows.Storage;
+using Newtonsoft.Json;
 
 namespace AudioVideoPlayer.DataModel
 {
@@ -104,6 +107,12 @@ namespace AudioVideoPlayer.DataModel
         }
     }
 
+    public class PlaylistConfiguration
+    {
+        public string Url { get; set; }
+        public string User { get; set; }
+    }
+
     class MediaDataSource
     {
         public static string MediaDataPath { get; private set; }
@@ -114,13 +123,6 @@ namespace AudioVideoPlayer.DataModel
         public ObservableCollection<MediaDataGroup> Groups
         {
             get { return this._groups; }
-        }
-
-        public static async Task<IEnumerable<MediaDataGroup>> GetGroupsAsync(string path)
-        {
-            if(await _MediaDataSource.GetMediaDataAsync(path)== true)
-                return _MediaDataSource.Groups;
-            return null;
         }
 
         public static async Task<MediaDataGroup> GetGroupAsync(string path, string uniqueId)
@@ -134,16 +136,6 @@ namespace AudioVideoPlayer.DataModel
             return null;
         }
 
-        public static async Task<MediaItem> GetItemAsync(string path,  string uniqueId)
-        {
-            if (await _MediaDataSource.GetMediaDataAsync(path) == true)
-            {
-                // Simple linear search is acceptable for small data sets
-                var matches = _MediaDataSource.Groups.SelectMany(group => group.Items).Where((item) => item.UniqueId.Equals(uniqueId));
-                if (matches.Count() == 1) return matches.First();
-            }
-            return null;
-        }
         public static void Clear()
         {
             if (_MediaDataSource._groups.Count != 0)
@@ -152,11 +144,12 @@ namespace AudioVideoPlayer.DataModel
             }
 
         }
+
         private async Task<bool> GetMediaDataAsync(string path)
         {
             if (this._groups.Count != 0)
                 return false;
-            string jsonText = string.Empty;
+            var jsonText = string.Empty;
 
             if (string.IsNullOrEmpty(path))
             {
@@ -181,6 +174,23 @@ namespace AudioVideoPlayer.DataModel
                     jsonText = await FileIO.ReadTextAsync(file);
                     MediaDataPath = path;
                 }
+                else if (path.StartsWith("https://"))
+                {
+                    try
+                    {
+                        using (var client = new HttpClient())
+                        {
+                            var response = await client.GetAsync(path);
+                            response.EnsureSuccessStatusCode();
+                            jsonText = await response.Content.ReadAsStringAsync();
+                            MediaDataPath = path;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        System.Diagnostics.Debug.WriteLine(string.Format("{0:d/M/yyyy HH:mm:ss.fff}", DateTime.Now) + " Exception while opening the playlist: " + path + " Exception: " + e.Message);
+                    }
+                }
                 else if (path.StartsWith("http://"))
                 {
                     try
@@ -188,13 +198,12 @@ namespace AudioVideoPlayer.DataModel
                         //Download the json file from the server to configure what content will be dislayed.
                         //You can also modify the local MediaData.json file and delete this code block to test
                         //the local json file
-                        string MediaDataFile = path;
                         Windows.Web.Http.Filters.HttpBaseProtocolFilter filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
                         filter.CacheControl.ReadBehavior = Windows.Web.Http.Filters.HttpCacheReadBehavior.MostRecent;
                         Windows.Web.Http.HttpClient http = new Windows.Web.Http.HttpClient(filter);
-                        Uri httpUri = new Uri(MediaDataFile);
+                        Uri httpUri = new Uri(path);
                         jsonText = await http.GetStringAsync(httpUri);
-                        MediaDataPath = MediaDataFile;
+                        MediaDataPath = path;
                     }
                     catch (Exception e)
                     {
@@ -229,7 +238,6 @@ namespace AudioVideoPlayer.DataModel
 
             try
             {
-
                 JsonObject jsonObject = JsonObject.Parse(jsonText);
                 JsonArray jsonArray = jsonObject["Groups"].GetArray();
 
