@@ -52,7 +52,7 @@ namespace AudioVideoPlayer
             get { return this.defaultViewModel; }
         }
         // Timer used to automatically skip to the next stream
-        private DispatcherTimer timer ;
+        private DispatcherTimer timer;
         // AutoSkip
         // When the media ended, skip automatically to the next stream in the list 
         private bool bAutoSkip = true;
@@ -66,11 +66,12 @@ namespace AudioVideoPlayer
         };
         private WindowMediaState windowState;
         // WindowMode define the way the Media is displayed: Window, Full Window, Full Screen mode
-        private WindowMediaState WindowState {
+        private WindowMediaState WindowState
+        {
             get { return windowState; }
             set
             {
-                if(windowState != value)
+                if (windowState != value)
                 {
                     windowState = value;
                     LogMessage("Media in " + windowState.ToString() + " state");
@@ -124,7 +125,7 @@ namespace AudioVideoPlayer
         public async void SetPath(string path)
         {
             mediaUri.Text = "file://" + path;
-            if(AutoSkip.IsChecked == true)
+            if (AutoSkip.IsChecked == true)
             {
                 await StartPlay(mediaUri.Text, mediaUri.Text, null, 0, 0);
             }
@@ -148,7 +149,7 @@ namespace AudioVideoPlayer
             // Bind player to element
             mediaPlayer = new Windows.Media.Playback.MediaPlayer();
             mediaPlayerElement.SetMediaPlayer(mediaPlayer);
-                       
+
             if (e.NavigationMode != NavigationMode.New)
                 RestoreState();
 
@@ -172,21 +173,7 @@ namespace AudioVideoPlayer
             // Initialize the Companion mode (Remote or Player)
             InitializeCompanionMode();
 
-            await Task.Run(async () =>
-            {
-                var dataUri = new Uri("ms-appx:///config.json");
-                var file = await StorageFile.GetFileFromApplicationUriAsync(dataUri);
-                var config = JsonConvert.DeserializeObject<PlaylistConfiguration>(await FileIO.ReadTextAsync(file));
-                url = config.Url;
-                //var config = JsonConvert.DeserializeObject<PlaylistConfiguration>(File.ReadAllText(file));
-            });
-
-            // Load Data
-            if (string.IsNullOrEmpty(MediaDataSource.MediaDataPath) && !string.IsNullOrWhiteSpace(url))
-            {
-                LogMessage("MainPage Loading Data... with this url: " + url);
-                await LoadingData(url);
-            }
+            await SetConfigurationFiles();
 
             // Take into account the argument if file activated
             var args = e.Parameter as Windows.ApplicationModel.Activation.IActivatedEventArgs;
@@ -210,6 +197,23 @@ namespace AudioVideoPlayer
 
             // Display OS, Device information
             LogMessage(Information.SystemInformation.GetString());
+        }
+
+        private async Task SetConfigurationFiles()
+        {
+            await Task.Run(async () =>
+            {
+                var dataUri = new Uri("ms-appx:///config.json");
+                var file = await StorageFile.GetFileFromApplicationUriAsync(dataUri);
+                var config = JsonConvert.DeserializeObject<PlaylistConfiguration>(await FileIO.ReadTextAsync(file));
+                url = string.Format(config.Url, config.Mail);
+            });
+
+            if (!string.IsNullOrWhiteSpace(url))
+            {
+                LogMessage("MainPage Loading Data... with this url: " + url);
+                await LoadingData(url);
+            }
         }
 
         /// <summary>
@@ -388,18 +392,15 @@ namespace AudioVideoPlayer
         /// <summary>
         /// Method LoadingData which loads the JSON playlist file
         /// </summary>
-        async System.Threading.Tasks.Task<bool> LoadingData(string path)
+        async Task<bool> LoadingData(string path)
         {
-            MediaDataGroup audio_video = null;
-            string oldPath = MediaDataSource.MediaDataPath;
-
             try
             {
                 Window.Current.CoreWindow.PointerCursor = new Windows.UI.Core.CoreCursor(Windows.UI.Core.CoreCursorType.Wait, 1);
 
-                MediaDataSource.Clear();
+                //MediaDataSource.Clear();
                 LogMessage(string.IsNullOrEmpty(path) ? "Loading default playlist" : "Loading playlist :" + path);
-                audio_video = await MediaDataSource.GetGroupAsync(path, "audio_video_picture");
+                var audio_video = await MediaDataSource.GetGroupAsync(path, "audio_video_picture");
                 if ((audio_video != null) && (audio_video.Items.Count > 0))
                 {
                     LogMessage("Loading playlist successful with " + audio_video.Items.Count.ToString() + " items");
@@ -414,7 +415,8 @@ namespace AudioVideoPlayer
                     }
                     this.defaultViewModel = audio_video.Items;
                     comboStream.DataContext = this.DefaultViewModel;
-                    comboStream.SelectedIndex = 0;
+                    if (comboStream.SelectedIndex < 0 || comboStream.SelectedIndex > audio_video.Items.Count)
+                        comboStream.SelectedIndex = 0;
                     return true;
                 }
             }
@@ -537,7 +539,7 @@ namespace AudioVideoPlayer
         private void MediaElement_MediaOpened(Windows.Media.Playback.MediaPlayer sender, object e)
         {
             LogMessage("Media opened");
-            if((mediaPlayer.PlaybackSession!=null) && (mediaPlayer.PlaybackSession.CanSeek))
+            if ((mediaPlayer.PlaybackSession != null) && (mediaPlayer.PlaybackSession.CanSeek))
             {
                 mediaPlayer.PlaybackSession.Position = CurrentStartPosition;
             }
@@ -581,7 +583,7 @@ namespace AudioVideoPlayer
             bool bResult = false;
             // Smooth Streaming initialization
             // Init SMOOTH Manager
-            if(smoothStreamingManager != null)
+            if (smoothStreamingManager != null)
             {
                 smoothStreamingManager.ManifestReadyEvent -= SmoothStreamingManager_ManifestReadyEvent;
                 smoothStreamingManager.AdaptiveSourceStatusUpdatedEvent -= SmoothStreamingManager_AdaptiveSourceStatusUpdatedEvent;
@@ -634,7 +636,7 @@ namespace AudioVideoPlayer
             bool bResult = false;
             // PlayReady
             // Init PlayReady Protection Manager
-            if(protectionManager!=null)
+            if (protectionManager != null)
             {
                 protectionManager.ComponentLoadFailed -= ProtectionManager_ComponentLoadFailed;
                 protectionManager.ServiceRequested -= ProtectionManager_ServiceRequested;
@@ -742,7 +744,7 @@ namespace AudioVideoPlayer
                     await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
                     {
                         LogMessage("Stop from SystemMediaTransportControls");
-//                        mediaPlayer.Stop();
+                        //                        mediaPlayer.Stop();
                         mediaPlayer.Source = null;
                     });
                     break;
@@ -821,7 +823,7 @@ namespace AudioVideoPlayer
                 else
                     mediaPlayer.Pause();
             }
-            
+
             LogMessage("RestoreState - Position: " + mediaPlayer.PlaybackSession.Position.ToString() + " State: " + mediaPlayer.PlaybackSession.PlaybackState.ToString());
         }
         /// <summary>
@@ -874,8 +876,8 @@ namespace AudioVideoPlayer
         /// </summary>
         /// <param name="Message">String to display</param>
         async void LogMessage(string Message)
-        {            
-            string Text = string.Format("{0:d/M/yyyy HH:mm:ss.fff}", DateTime.Now) + " " + Message + "\n";            
+        {
+            string Text = string.Format("{0:d/M/yyyy HH:mm:ss.fff}", DateTime.Now) + " " + Message + "\n";
             PushMessage(Text);
             System.Diagnostics.Debug.WriteLine(Text);
             await DisplayLogMessage();
@@ -900,7 +902,7 @@ namespace AudioVideoPlayer
                             while (LocalString.Length > 12000)
                             {
                                 int pos = LocalString.IndexOf('\n');
-                                if(pos == -1)
+                                if (pos == -1)
                                     pos = LocalString.IndexOf('\r');
 
 
@@ -1010,7 +1012,7 @@ namespace AudioVideoPlayer
             await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal,
                  () =>
                  {
-                     if(Remote.IsChecked==true)
+                     if (Remote.IsChecked == true)
                      {
                          playButton.IsEnabled = true;
                          playPauseButton.IsEnabled = true;
@@ -1043,7 +1045,7 @@ namespace AudioVideoPlayer
                          maxBitrate.IsEnabled = true;
                          AutoSkip.IsEnabled = true;
 
-                         if ((comboStream.Items.Count > 0)||(!string.IsNullOrEmpty(mediaUri.Text)))
+                         if ((comboStream.Items.Count > 0) || (!string.IsNullOrEmpty(mediaUri.Text)))
                          {
                              playButton.IsEnabled = true;
 
@@ -1075,9 +1077,9 @@ namespace AudioVideoPlayer
                                  {
                                      //if (string.Equals(mediaUri.Text, CurrentMediaUrl))
                                      //{
-                                         playPauseButton.IsEnabled = false;
-                                         pausePlayButton.IsEnabled = true;
-                                         stopButton.IsEnabled = true;
+                                     playPauseButton.IsEnabled = false;
+                                     pausePlayButton.IsEnabled = true;
+                                     stopButton.IsEnabled = true;
                                      //}
                                  }
                                  else if (mediaPlayer.PlaybackSession.PlaybackState == Windows.Media.Playback.MediaPlaybackState.Paused)
@@ -1153,7 +1155,7 @@ namespace AudioVideoPlayer
                     (string.Equals(mediaUri.Text, CurrentMediaUrl)))
                 {
                     LogMessage("Stop " + CurrentMediaUrl.ToString());
-          //          mediaPlayer.Stop();
+                    //          mediaPlayer.Stop();
                     mediaPlayer.Source = null;
                 }
             }
@@ -1227,13 +1229,13 @@ namespace AudioVideoPlayer
             filePicker.CommitButtonText = "Open JSON Playlist File to Process";
 
             var file = await filePicker.PickSingleFileAsync();
-            if(file!=null)
+            if (file != null)
             {
                 string fileToken = Windows.Storage.AccessCache.StorageApplicationPermissions.FutureAccessList.Add(file);
                 LogMessage("Stopping MediaElement before Loading playlist");
                 try
                 {
-                 //   mediaPlayer.Stop();
+                    //   mediaPlayer.Stop();
                     mediaPlayer.Source = null;
                 }
                 catch (Exception)
@@ -1253,7 +1255,7 @@ namespace AudioVideoPlayer
         /// <summary>
         /// Channel up method 
         /// </summary>
-        private void plus_Click(object sender, RoutedEventArgs e)
+        private async void plus_Click(object sender, RoutedEventArgs e)
         {
             if (Remote.IsChecked == true)
             {
@@ -1262,11 +1264,14 @@ namespace AudioVideoPlayer
             }
             try
             {
+                //LogMessage("MainPage Loading Data... with this url: " + url);
+                //await LoadingData("https://drancyplaylist.azurewebsites.net/api/get-test?code=bUiqghJcyBcaie3uVK6pjDF9pz0aWrEvmEzxiuO79uWz6E1YKpILhg==");
+                await SetConfigurationFiles();
                 int Index = comboStream.SelectedIndex;
-                Index = (Index+1>=comboStream.Items.Count? 0: ++Index);
+                Index = (Index + 1 >= comboStream.Items.Count ? 0 : ++Index);
                 comboStream.SelectedIndex = Index;
                 MediaItem ms = comboStream.SelectedItem as MediaItem;
-                if(ms!=null)
+                if (ms != null)
                 {
                     mediaUri.Text = ms.Content;
                     PlayReadyLicenseUrl = ms.PlayReadyUrl;
@@ -1295,10 +1300,10 @@ namespace AudioVideoPlayer
             try
             {
                 int Index = comboStream.SelectedIndex;
-                Index = (Index - 1 >= 0 ? --Index : comboStream.Items.Count-1);
+                Index = (Index - 1 >= 0 ? --Index : comboStream.Items.Count - 1);
                 comboStream.SelectedIndex = Index;
                 MediaItem ms = comboStream.SelectedItem as MediaItem;
-                if(ms!=null)
+                if (ms != null)
                 {
                     mediaUri.Text = ms.Content;
                     PlayReadyLicenseUrl = ms.PlayReadyUrl;
@@ -1340,7 +1345,7 @@ namespace AudioVideoPlayer
                 return;
             }
             LogMessage("Volume Up");
-            mediaPlayer.Volume = (mediaPlayer.Volume + 0.10 <= 1 ? mediaPlayer.Volume + 0.10 : 1) ;
+            mediaPlayer.Volume = (mediaPlayer.Volume + 0.10 <= 1 ? mediaPlayer.Volume + 0.10 : 1);
             UpdateControls();
         }
         /// <summary>
@@ -1401,8 +1406,8 @@ namespace AudioVideoPlayer
                 httpHeadersString = ms.HttpHeaders;
                 httpHeaders = GetHttpHeaders(httpHeadersString);
                 if (!string.Equals(CurrentMediaUrl, mediaUri.Text))
-//                    mediaPlayer.Stop();
-                mediaPlayer.Source = null;
+                    //                    mediaPlayer.Stop();
+                    mediaPlayer.Source = null;
                 UpdateControls();
             }
 
@@ -1738,11 +1743,11 @@ namespace AudioVideoPlayer
         /// This method return a collection of http Headers
         /// </summary>
         private Dictionary<string, string> GetHttpHeaders(string httpHeadersString)
-        {            
+        {
             Dictionary<string, string> headers = null;
             if (!string.IsNullOrEmpty(httpHeadersString))
             {
-                string[] keys = { ",","{","}" };
+                string[] keys = { ",", "{", "}" };
                 string[] headerArray = httpHeadersString.Split(keys, StringSplitOptions.RemoveEmptyEntries);
 
                 foreach (var h in headerArray)
@@ -1753,8 +1758,8 @@ namespace AudioVideoPlayer
                     {
                         if (headers == null)
                             headers = new Dictionary<string, string>();
-                        if(headers != null)
-                            headers.Add(res[0].Trim(),res[1].Trim());
+                        if (headers != null)
+                            headers.Add(res[0].Trim(), res[1].Trim());
                     }
                 }
             }
@@ -1771,14 +1776,14 @@ namespace AudioVideoPlayer
                 {
                     foreach (var var in h)
                     {
-                        LogMessage("Adding in the Http Header key: " + var.Key +" Value: " + var.Value);
+                        LogMessage("Adding in the Http Header key: " + var.Key + " Value: " + var.Value);
                         hc.TryAppendWithoutValidation(var.Key, var.Value);
                     }
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                LogMessage("Exception while setting the http headers: "+ e.Message);
+                LogMessage("Exception while setting the http headers: " + e.Message);
             }
         }
         /// <summary>
@@ -1793,7 +1798,7 @@ namespace AudioVideoPlayer
                     foreach (var var in hsource)
                     {
                         LogMessage("Adding in the Http Header key: " + var.Key + " Value: " + var.Value);
-                        if(hdest.ContainsKey(var.Key))
+                        if (hdest.ContainsKey(var.Key))
                             hdest[var.Key] = var.Value;
                         else
                             hdest.Add(var.Key, var.Value);
@@ -1869,7 +1874,7 @@ namespace AudioVideoPlayer
             bool result = false;
             if (!string.IsNullOrEmpty(url))
             {
-                if ((url.ToLower().StartsWith("redirect://")) )
+                if ((url.ToLower().StartsWith("redirect://")))
                 {
                     result = true;
                 }
@@ -1902,7 +1907,7 @@ namespace AudioVideoPlayer
             bool result = false;
             if (!string.IsNullOrEmpty(url))
             {
-                if(url.ToLower().EndsWith("/manifest"))
+                if (url.ToLower().EndsWith("/manifest"))
                 {
                     result = true;
                 }
@@ -1959,7 +1964,7 @@ namespace AudioVideoPlayer
             //            SystemControls.DisplayUpdater.ClearAll();
             SystemControls.IsPlayEnabled = true;
             SystemControls.IsPauseEnabled = true;
-            if ((comboStream.Items.Count > 1)&&(bAutoSkip))
+            if ((comboStream.Items.Count > 1) && (bAutoSkip))
             {
                 SystemControls.IsPreviousEnabled = true;
                 SystemControls.IsNextEnabled = true;
@@ -1970,21 +1975,22 @@ namespace AudioVideoPlayer
                 SystemControls.DisplayUpdater.ImageProperties.Title = title;
                 SystemControls.DisplayUpdater.ImageProperties.Subtitle = content;
                 SystemControls.DisplayUpdater.Thumbnail = await CreatePosterStream(poster);
-                SystemControls.DisplayUpdater.Update();               
+                SystemControls.DisplayUpdater.Update();
             }
             //else { 
-            else if(IsMusic(content)){
-            //    SystemControls.DisplayUpdater.ClearAll();
+            else if (IsMusic(content))
+            {
+                //    SystemControls.DisplayUpdater.ClearAll();
                 SystemControls.DisplayUpdater.Type = Windows.Media.MediaPlaybackType.Music;
                 SystemControls.DisplayUpdater.MusicProperties.Title = title;
                 SystemControls.DisplayUpdater.MusicProperties.Artist = content;
                 SystemControls.DisplayUpdater.Thumbnail = await CreatePosterStream(poster);
                 SystemControls.DisplayUpdater.Update();
             }
-            
+
             else
             {
-              //  SystemControls.DisplayUpdater.ClearAll();
+                //  SystemControls.DisplayUpdater.ClearAll();
                 SystemControls.DisplayUpdater.Type = Windows.Media.MediaPlaybackType.Video;
                 SystemControls.DisplayUpdater.VideoProperties.Title = title;
                 SystemControls.DisplayUpdater.VideoProperties.Subtitle = content;
@@ -2063,7 +2069,7 @@ namespace AudioVideoPlayer
                 {
                     try
                     {
-                        
+
                         // Load the bitmap image over http
                         //Windows.Web.Http.HttpClient httpClient = new Windows.Web.Http.HttpClient();
                         //Windows.Storage.Streams.InMemoryRandomAccessStream ras = new Windows.Storage.Streams.InMemoryRandomAccessStream();
@@ -2086,7 +2092,7 @@ namespace AudioVideoPlayer
 
                         using (var client = new Windows.Web.Http.HttpClient())
                         {
-                            
+
                             var response = await client.GetAsync(new Uri(PosterUrl));
                             var b = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
                             if (response != null && response.StatusCode == Windows.Web.Http.HttpStatusCode.Ok)
@@ -2120,7 +2126,7 @@ namespace AudioVideoPlayer
 
             return false;
         }
-        
+
         /// <summary>
         /// StartPlay
         /// Start to play pictures, audio content or video content
@@ -2142,7 +2148,7 @@ namespace AudioVideoPlayer
                     LogMessage("Empty Uri");
                     return result;
                 }
-                LogMessage("Start to play: " + content + (string.IsNullOrEmpty(poster)?"" : " with poster: " + poster) + (start>0?" from " + start.ToString() + "ms":"") + (start > 0 ? " during " + duration.ToString() + "ms" : "")) ;
+                LogMessage("Start to play: " + content + (string.IsNullOrEmpty(poster) ? "" : " with poster: " + poster) + (start > 0 ? " from " + start.ToString() + "ms" : "") + (start > 0 ? " during " + duration.ToString() + "ms" : ""));
                 // Display the PlayReady expiration date for this video (if protected)
                 if (PlayReadyUrlKeyIdDictionary.ContainsKey(content))
                 {
@@ -2157,7 +2163,7 @@ namespace AudioVideoPlayer
                 // before playing the asset
                 // if the content to play is based on VC1 codec and the hardware DRM is enabled,
                 // the software DRM will be enabled on event Manifest Ready
-                LogMessage("Restoring the DRM configuration: " + (IsHardwareDRMSupported() == true? "Hardware DRM": "Software DRM"));
+                LogMessage("Restoring the DRM configuration: " + (IsHardwareDRMSupported() == true ? "Hardware DRM" : "Software DRM"));
                 EnableSoftwareDRM(!IsHardwareDRMSupported());
 
                 // Stop the current stream
@@ -2293,11 +2299,11 @@ namespace AudioVideoPlayer
                 }
                 else
                 {
-                  
+
                     file = await Windows.Storage.StorageFile.GetFileFromPathAsync(path);
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 LogMessage("Exception while opening file: " + PosterUrl + " exception: " + e.Message);
             }
@@ -2318,9 +2324,9 @@ namespace AudioVideoPlayer
             {
                 contentUri = new Uri(content);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                LogMessage("Exception while creating uri for: " + content  + " exception: " + ex.Message);
+                LogMessage("Exception while creating uri for: " + content + " exception: " + ex.Message);
 
             }
             LogMessage("Get Remote content from: " + contentUri.ToString());
@@ -2360,7 +2366,7 @@ namespace AudioVideoPlayer
                 if (IsRedirectUri(Content))
                 {
                     string localuri = Content.Replace("redirect://", "");
-                    string newContent  = await GetRemoteContent(localuri,true);
+                    string newContent = await GetRemoteContent(localuri, true);
                     if (!string.IsNullOrEmpty(newContent) && Uri.IsWellFormedUriString(newContent, UriKind.Absolute))
                     {
                         Content = newContent;
@@ -2433,10 +2439,10 @@ namespace AudioVideoPlayer
                     // If SMOOTH stream
                     if (IsSmoothStreaming(Content))
                     {
-                     //   string modifier = Content.Contains("?") ? "&" : "?";
-                     //   string newUriString = string.Concat(Content, modifier, "ignore=", Guid.NewGuid());
+                        //   string modifier = Content.Contains("?") ? "&" : "?";
+                        //   string newUriString = string.Concat(Content, modifier, "ignore=", Guid.NewGuid());
                         mediaPlayer.Source = Windows.Media.Core.MediaSource.CreateFromUri(new Uri(Content));
-                        
+
                         return true;
                     }
                     else
@@ -2487,7 +2493,7 @@ namespace AudioVideoPlayer
                                     startupBitrate = b;
                             }
                             // Set bitrate range for HLS and DASH
-                            if(startupBitrate>0)
+                            if (startupBitrate > 0)
                                 adaptiveMediaSource.InitialBitrate = startupBitrate;
                             adaptiveMediaSource.DesiredMaxBitrate = MaxBitRate;
                             adaptiveMediaSource.DesiredMinBitrate = MinBitRate;
@@ -2519,17 +2525,17 @@ namespace AudioVideoPlayer
         private void SmoothStreamingManager_ManifestReadyEvent(Microsoft.Media.AdaptiveStreaming.AdaptiveSource sender, Microsoft.Media.AdaptiveStreaming.ManifestReadyEventArgs args)
         {
             // VC1 Codec flag: true if VC1 codec is used for this Smooth Streaming content
-            bool bVC1CodecDetected = false;            
+            bool bVC1CodecDetected = false;
             LogMessage("Manifest Ready for uri: " + sender.Uri.ToString());
             foreach (var stream in args.AdaptiveSource.Manifest.SelectedStreams)
             {
 
                 if (stream.Type == Microsoft.Media.AdaptiveStreaming.MediaStreamType.Video)
                 {
-                    
+
                     foreach (var track in stream.SelectedTracks)
                     {
-                        LogMessage("  Bitrate: " + track.Bitrate.ToString() + " Width: " + track.MaxWidth.ToString() + " Height: " + track.MaxHeight.ToString() + " FourCC: " + track.FourCC) ;
+                        LogMessage("  Bitrate: " + track.Bitrate.ToString() + " Width: " + track.MaxWidth.ToString() + " Height: " + track.MaxHeight.ToString() + " FourCC: " + track.FourCC);
                         if ((bVC1CodecDetected == false) && ((track.FourCC == 0x31435657/*WVC1*/) || (track.FourCC == 0x31435641 /*AVC1*/)))
                             bVC1CodecDetected = true;
                     }
@@ -2568,7 +2574,7 @@ namespace AudioVideoPlayer
             }
             // if the platform does support Hardware DRM and VC1 codec is used by this content
             // the application will force the Software DRM  as current Hardware DRM implementation doesn't support VC1 codec 
-            if((bVC1CodecDetected == true)&&(IsHardwareDRMEnabled()))
+            if ((bVC1CodecDetected == true) && (IsHardwareDRMEnabled()))
             {
                 LogMessage("Enable Software DRM as VC1 content has been detected");
                 EnableSoftwareDRM(true);
@@ -2622,7 +2628,7 @@ namespace AudioVideoPlayer
         public IAsyncOperation<Microsoft.Media.AdaptiveStreaming.DownloaderResponse> RequestAsync(Microsoft.Media.AdaptiveStreaming.DownloaderRequest request)
         {
             System.Threading.Tasks.TaskCompletionSource<Microsoft.Media.AdaptiveStreaming.DownloaderResponse> resp = new System.Threading.Tasks.TaskCompletionSource<Microsoft.Media.AdaptiveStreaming.DownloaderResponse>();
-            Microsoft.Media.AdaptiveStreaming.DownloaderResponse dr; 
+            Microsoft.Media.AdaptiveStreaming.DownloaderResponse dr;
             if (httpHeaders != null)
             {
                 Dictionary<string, string> localHttpHeaders = new Dictionary<string, string>();
@@ -2656,8 +2662,8 @@ namespace AudioVideoPlayer
 
         private async void AdaptiveMediaSource_DownloadRequested(Windows.Media.Streaming.Adaptive.AdaptiveMediaSource sender, Windows.Media.Streaming.Adaptive.AdaptiveMediaSourceDownloadRequestedEventArgs args)
         {
-//            LogMessage("DownloadRequested for uri: " + args.ResourceUri.ToString());
-            
+            //            LogMessage("DownloadRequested for uri: " + args.ResourceUri.ToString());
+
             var deferral = args.GetDeferral();
             if (deferral != null)
             {
@@ -2675,7 +2681,7 @@ namespace AudioVideoPlayer
                             SetHttpHeaders(httpHeaders, request.Headers);
                         }
                         Windows.Web.Http.HttpResponseMessage response = await httpClient.SendRequestAsync(request);
-                       // args.Result.ExtendedStatus = (uint)response.StatusCode;
+                        // args.Result.ExtendedStatus = (uint)response.StatusCode;
                         if (response.IsSuccessStatusCode)
                         {
                             //args.Result.ExtendedStatus = (uint)response.StatusCode;
@@ -2690,11 +2696,11 @@ namespace AudioVideoPlayer
                         LogMessage("DownloadRequested for uri: " + args.ResourceUri.ToString() + " exception: " + e.Message);
 
                     }
-//                    LogMessage("DownloadRequested for uri: " + args.ResourceUri.ToString() + " done");
+                    //                    LogMessage("DownloadRequested for uri: " + args.ResourceUri.ToString() + " done");
                     deferral.Complete();
                 }
             }
-            
+
         }
 
         /// <summary>
@@ -2710,7 +2716,7 @@ namespace AudioVideoPlayer
         /// </summary>
         private void AdaptiveMediaSource_DownloadCompleted(Windows.Media.Streaming.Adaptive.AdaptiveMediaSource sender, Windows.Media.Streaming.Adaptive.AdaptiveMediaSourceDownloadCompletedEventArgs args)
         {
-           // LogMessage("DownloadRequested completed for uri: " + args.ResourceUri.ToString());
+            // LogMessage("DownloadRequested completed for uri: " + args.ResourceUri.ToString());
         }
         /// <summary>
         /// Called when the bitrate change for DASH or HLS 
@@ -2785,7 +2791,7 @@ namespace AudioVideoPlayer
             {
                 if (!localSettings.Containers.ContainsKey("PlayReady"))
                     localSettings.CreateContainer("PlayReady", Windows.Storage.ApplicationDataCreateDisposition.Always);
-                localSettings.Containers["PlayReady"].Values["SoftwareOverride"] = (bEnable==true ? 1: 0);
+                localSettings.Containers["PlayReady"].Values["SoftwareOverride"] = (bEnable == true ? 1 : 0);
             }
             catch (Exception e)
             {
@@ -2800,9 +2806,9 @@ namespace AudioVideoPlayer
             {
                 int UseSoftwareProtectionLayer = (int)localSettings.Containers["PlayReady"].Values["SoftwareOverride"];
 
-                if(protectionManager.Properties.ContainsKey("Windows.Media.Protection.UseSoftwareProtectionLayer"))
-                    protectionManager.Properties["Windows.Media.Protection.UseSoftwareProtectionLayer"] = (UseSoftwareProtectionLayer == 1? true : false);
-                else  
+                if (protectionManager.Properties.ContainsKey("Windows.Media.Protection.UseSoftwareProtectionLayer"))
+                    protectionManager.Properties["Windows.Media.Protection.UseSoftwareProtectionLayer"] = (UseSoftwareProtectionLayer == 1 ? true : false);
+                else
                     protectionManager.Properties.Add("Windows.Media.Protection.UseSoftwareProtectionLayer", (UseSoftwareProtectionLayer == 1 ? true : false));
             }
             return true;
@@ -2856,7 +2862,7 @@ namespace AudioVideoPlayer
                             httpContent.Headers.TryAppendWithoutValidation(strHeaderName.ToString(), strHeaderValue);
                     }
                     CommonLicenseRequest licenseAcquision = new CommonLicenseRequest();
-                    
+
                     Windows.Web.Http.IHttpContent responseHttpContent = await licenseAcquision.AcquireLicense(new Uri(Url), httpContent);
                     if (responseHttpContent != null)
                     {
@@ -2949,7 +2955,7 @@ namespace AudioVideoPlayer
         /// </summary>
         private async void ProtectionManager_ServiceRequested(Windows.Media.Protection.MediaProtectionManager sender, Windows.Media.Protection.ServiceRequestedEventArgs e)
         {
-            LogMessage("ProtectionManager ServiceRequested - Current DRM Configuration: " + (IsHardwareDRMEnabled()?"Hardware":"Software"));
+            LogMessage("ProtectionManager ServiceRequested - Current DRM Configuration: " + (IsHardwareDRMEnabled() ? "Hardware" : "Software"));
             if (e.Request is Windows.Media.Protection.PlayReady.PlayReadyIndividualizationServiceRequest)
             {
                 Windows.Media.Protection.PlayReady.PlayReadyIndividualizationServiceRequest IndivRequest = e.Request as Windows.Media.Protection.PlayReady.PlayReadyIndividualizationServiceRequest;
@@ -2959,11 +2965,11 @@ namespace AudioVideoPlayer
             {
                 Windows.Media.Protection.PlayReady.PlayReadyLicenseAcquisitionServiceRequest licenseRequest = e.Request as Windows.Media.Protection.PlayReady.PlayReadyLicenseAcquisitionServiceRequest;
                 bool result = await LicenseAcquisitionRequest(licenseRequest, e.Completion, PlayReadyLicenseUrl, PlayReadyChallengeCustomData);
-                if(result==true)
+                if (result == true)
                 {
                     // Store the keyid of the current video
                     // if the user wants to retrieve subsequently the PlayReady license Expiration date
-                    if(!PlayReadyUrlKeyIdDictionary.ContainsKey(CurrentMediaUrl))
+                    if (!PlayReadyUrlKeyIdDictionary.ContainsKey(CurrentMediaUrl))
                         PlayReadyUrlKeyIdDictionary.Add(CurrentMediaUrl, licenseRequest.ContentHeader.KeyId);
                     // Get the expiration date of PlayReady license
                     DateTime d = GetLicenseExpirationDate(licenseRequest.ContentHeader.KeyId);
@@ -2983,7 +2989,7 @@ namespace AudioVideoPlayer
         /// </summary>
         private DateTime GetLicenseExpirationDate(Guid videoId)
         {
-            
+
             var keyIdString = Convert.ToBase64String(videoId.ToByteArray());
             try
             {
@@ -2999,11 +3005,11 @@ namespace AudioVideoPlayer
                 foreach (var lic in licenses)
                 {
                     DateTimeOffset? d = MediaHelpers.PlayReadyHelper.GetLicenseExpirationDate(lic);
-                    if((d!=null)&&(d.HasValue))
-                            return d.Value.DateTime;
+                    if ((d != null) && (d.HasValue))
+                        return d.Value.DateTime;
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 System.Diagnostics.Debug.WriteLine("GetLicenseExpirationDate Exception: " + e.Message);
                 return DateTime.MinValue;
@@ -3087,12 +3093,12 @@ namespace AudioVideoPlayer
             s = ReadSettingsValue(keyWindowState) as string;
             if (!string.IsNullOrEmpty(s))
             {
-                int state ;
+                int state;
                 if (int.TryParse(s, out state))
                 {
-                    if(state==0)
+                    if (state == 0)
                         WindowState = WindowMediaState.WindowMode;
-                    else if ((state == 1)&&(bAutoSkip==true))
+                    else if ((state == 1) && (bAutoSkip == true))
                         WindowState = WindowMediaState.FullWindow;
                     else if ((state == 2) && (bAutoSkip == true))
                         WindowState = WindowMediaState.FullScreen;
@@ -3124,8 +3130,8 @@ namespace AudioVideoPlayer
             return true;
         }
         /// <summary>
-                 /// Function to read a setting value and clear it after reading it
-                 /// </summary>
+        /// Function to read a setting value and clear it after reading it
+        /// </summary>
         public static object ReadSettingsValue(string key)
         {
             if (!Windows.Storage.ApplicationData.Current.LocalSettings.Values.ContainsKey(key))
@@ -3449,7 +3455,7 @@ namespace AudioVideoPlayer
                 bool result = await companion.InitializeSend();
                 if (result == true)
                     LogMessage("Companion Initialize Send ok");
-               else
+                else
                     LogMessage("Error Companion Initialize Send");
 
             }

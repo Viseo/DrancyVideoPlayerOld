@@ -110,7 +110,7 @@ namespace AudioVideoPlayer.DataModel
     public class PlaylistConfiguration
     {
         public string Url { get; set; }
-        public string User { get; set; }
+        public string Mail { get; set; }
     }
 
     class MediaDataSource
@@ -142,13 +142,12 @@ namespace AudioVideoPlayer.DataModel
             {
                 _MediaDataSource._groups.Clear();
             }
-
         }
 
         private async Task<bool> GetMediaDataAsync(string path)
         {
-            if (this._groups.Count != 0)
-                return false;
+            //if (this._groups.Count != 0)
+            //    return false;
             string jsonText = string.Empty;
 
             if (string.IsNullOrEmpty(path))
@@ -255,7 +254,7 @@ namespace AudioVideoPlayer.DataModel
                     {
                         JsonObject itemObject = itemValue.GetObject();
                         long timeValue = 0;
-                        if (itemObject.ContainsKey("Comment"))
+                        if (!itemObject.ContainsKey("Comment"))
                         {
                             group.Items.Add(new MediaItem(itemObject["UniqueId"].GetString(), "", "", "ms-appx:///Assets/SMOOTH.png",
                                                                "", itemObject["Content"].GetString(), "", 0, 0, "", "", "", false));
@@ -277,7 +276,26 @@ namespace AudioVideoPlayer.DataModel
                                                                itemObject["BackgroundAudio"].GetBoolean()));
                         }
                     }
-                    this.Groups.Add(group);
+                    if (Groups.Any(g => g.UniqueId == group.UniqueId))
+                    {
+                        var currentGroup = Groups.First(g => g.UniqueId == group.UniqueId);
+                        var itemsToRemove = currentGroup.Items.Where(item => group.Items.All(i => i.UniqueId != item.UniqueId)).ToList();
+                        foreach (var item in itemsToRemove)
+                        {
+                            currentGroup.Items.Remove(item);
+                        }
+                        foreach (var item in group.Items)
+                        {
+                            if (currentGroup.Items.All(i => i.UniqueId != item.UniqueId))
+                            {
+                                currentGroup.Items.Add(item);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Groups.Add(group);
+                    }
                     return true;
                 }
             }
