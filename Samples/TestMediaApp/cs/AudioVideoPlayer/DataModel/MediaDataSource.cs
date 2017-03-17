@@ -27,7 +27,7 @@ namespace AudioVideoPlayer.DataModel
     /// </summary>
     public class MediaItem
     {
-        public MediaItem(String uniqueId, 
+        public MediaItem(String uniqueId,
                               String comment,
                               String title,
                               String imagePath,
@@ -149,7 +149,7 @@ namespace AudioVideoPlayer.DataModel
         {
             if (this._groups.Count != 0)
                 return false;
-            var jsonText = string.Empty;
+            string jsonText = string.Empty;
 
             if (string.IsNullOrEmpty(path))
             {
@@ -198,6 +198,7 @@ namespace AudioVideoPlayer.DataModel
                         //Download the json file from the server to configure what content will be dislayed.
                         //You can also modify the local MediaData.json file and delete this code block to test
                         //the local json file
+
                         Windows.Web.Http.Filters.HttpBaseProtocolFilter filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
                         filter.CacheControl.ReadBehavior = Windows.Web.Http.Filters.HttpCacheReadBehavior.MostRecent;
                         Windows.Web.Http.HttpClient http = new Windows.Web.Http.HttpClient(filter);
@@ -217,7 +218,7 @@ namespace AudioVideoPlayer.DataModel
                         //Download the json file from the server to configure what content will be dislayed.
                         //You can also modify the local MediaData.json file and delete this code block to test
                         //the local json file
-                        string MediaDataFile = path;                        
+                        string MediaDataFile = path;
                         StorageFile file;
                         file = await Windows.Storage.StorageFile.GetFileFromPathAsync(path);
                         if (file != null)
@@ -254,19 +255,27 @@ namespace AudioVideoPlayer.DataModel
                     {
                         JsonObject itemObject = itemValue.GetObject();
                         long timeValue = 0;
-                        group.Items.Add(new MediaItem(itemObject["UniqueId"].GetString(),
-                                                           itemObject["Comment"].GetString(),
-                                                           itemObject["Title"].GetString(),
-                                                           itemObject["ImagePath"].GetString(),
-                                                           itemObject["Description"].GetString(),
-                                                           itemObject["Content"].GetString(),
-                                                           itemObject["PosterContent"].GetString(),
-                                                           (long.TryParse(itemObject["Start"].GetString(), out timeValue) ? timeValue : 0),
-                                                           (long.TryParse(itemObject["Duration"].GetString(), out timeValue) ? timeValue : 0),
-                                                           (itemObject.ContainsKey("HttpHeaders") ? itemObject["HttpHeaders"].GetString() : ""),
-                                                           itemObject["PlayReadyUrl"].GetString(),
-                                                           itemObject["PlayReadyCustomData"].GetString(),
-                                                           itemObject["BackgroundAudio"].GetBoolean()));
+                        if (itemObject.ContainsKey("Comment"))
+                        {
+                            group.Items.Add(new MediaItem(itemObject["UniqueId"].GetString(), "", "", "ms-appx:///Assets/SMOOTH.png",
+                                                               "", itemObject["Content"].GetString(), "", 0, 0, "", "", "", false));
+                        }
+                        else
+                        {
+                            group.Items.Add(new MediaItem(itemObject["UniqueId"].GetString(),
+                                                               itemObject["Comment"].GetString(),
+                                                               itemObject["Title"].GetString(),
+                                                               itemObject["ImagePath"].GetString(),
+                                                               itemObject["Description"].GetString(),
+                                                               itemObject["Content"].GetString(),
+                                                               itemObject["PosterContent"].GetString(),
+                                                               (long.TryParse(itemObject["Start"].GetString(), out timeValue) ? timeValue : 0),
+                                                               (long.TryParse(itemObject["Duration"].GetString(), out timeValue) ? timeValue : 0),
+                                                               (itemObject.ContainsKey("HttpHeaders") ? itemObject["HttpHeaders"].GetString() : ""),
+                                                               itemObject["PlayReadyUrl"].GetString(),
+                                                               itemObject["PlayReadyCustomData"].GetString(),
+                                                               itemObject["BackgroundAudio"].GetBoolean()));
+                        }
                     }
                     this.Groups.Add(group);
                     return true;
