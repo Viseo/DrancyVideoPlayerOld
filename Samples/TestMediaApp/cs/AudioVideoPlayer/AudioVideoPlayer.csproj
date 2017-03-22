@@ -96,7 +96,9 @@
     <!-- A reference to the entire .Net Framework and Windows SDK are automatically included -->
     <Content Include="Assets\Music.png" />
     <Content Include="Assets\PHOTO.png" />
-    <Content Include="DataModel\MediaData.json" />
+    <Content Include="DataModel\MediaData.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <None Include="AudioVideoPlayer_StoreKey.pfx" />
     <Content Include="config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

@@ -190,11 +190,13 @@ namespace AudioVideoPlayer
             if (bAutoSkip)
                 PlayCurrentUrl();
 
-            fullscreen_Click(this, null);
+            SetWindowMode(WindowMediaState.FullWindow);
+            //fullscreen_Click(this, null);
 
             // Update control and play first video
             UpdateControls();
 
+            SetWindowMode(WindowMediaState.FullScreen);
             // Display OS, Device information
             LogMessage(Information.SystemInformation.GetString());
         }
@@ -1448,23 +1450,26 @@ namespace AudioVideoPlayer
         {
             if (mediaPlayerElement.IsFullWindow)
             {
-                if (mediaPlayerElement.AreTransportControlsEnabled == true)
-                {
-                    WindowState = WindowMediaState.FullScreen;
-                    LogMessage("Media is in Full Screen mode");
-                }
-                else
-                {
-                    WindowState = WindowMediaState.FullWindow;
-                    LogMessage("Media is in Full Window mode");
-                }
+                // HACK: to remove transparent control from full screen
+                //if (mediaPlayerElement.AreTransportControlsEnabled == true)
+                //{
+                //    WindowState = WindowMediaState.FullScreen;
+                //    LogMessage("Media is in Full Screen mode");
+                //}
+                //else
+                //{
+                //    WindowState = WindowMediaState.FullWindow;
+                //    LogMessage("Media is in Full Window mode");
+                //}
+                WindowState = WindowMediaState.FullScreen;
+                LogMessage("Media is in Full Screen mode");
             }
             else
             {
-                mediaPlayerElement.AreTransportControlsEnabled = false;
-                WindowState = WindowMediaState.WindowMode;
-                SetWindowMode(WindowState);
-                LogMessage("Media is in Window mode");
+                //mediaPlayerElement.AreTransportControlsEnabled = false;
+                //WindowState = WindowMediaState.WindowMode;
+                //SetWindowMode(WindowState);
+                //LogMessage("Media is in Window mode");
             }
         }
 
@@ -1581,8 +1586,9 @@ namespace AudioVideoPlayer
                 }
                 else
                 {
-                    if (mediaPlayerElement.AreTransportControlsEnabled == false)
-                        mediaPlayerElement.AreTransportControlsEnabled = true;
+                    // HACK: to remove transparent control from full screen
+                    //if (mediaPlayerElement.AreTransportControlsEnabled == false)
+                    //    mediaPlayerElement.AreTransportControlsEnabled = true;
                     if (mediaPlayerElement.IsFullWindow == false)
                         mediaPlayerElement.IsFullWindow = true;
                     DisplayPicturePopup(false);
@@ -3090,24 +3096,8 @@ namespace AudioVideoPlayer
                 }
             }
             // Restore WindowState
-            s = ReadSettingsValue(keyWindowState) as string;
-            if (!string.IsNullOrEmpty(s))
-            {
-                int state;
-                if (int.TryParse(s, out state))
-                {
-                    if (state == 0)
-                        WindowState = WindowMediaState.WindowMode;
-                    else if ((state == 1) && (bAutoSkip == true))
-                        WindowState = WindowMediaState.FullWindow;
-                    else if ((state == 2) && (bAutoSkip == true))
-                        WindowState = WindowMediaState.FullScreen;
-                    else
-                        WindowState = WindowMediaState.WindowMode;
-
-                    SetWindowMode(WindowState);
-                }
-            }
+            WindowState = WindowMediaState.FullScreen;
+            SetWindowMode(WindowState);
             return true;
         }
         /// <summary>
@@ -3125,8 +3115,8 @@ namespace AudioVideoPlayer
             SaveSettingsValue(keyMediaUri, mediaUri.Text);
 
             // Save WindowState
-            int state = (int)WindowState;
-            SaveSettingsValue(keyWindowState, state.ToString());
+            //int state = (int)WindowState;
+            //SaveSettingsValue(keyWindowState, state.ToString());
             return true;
         }
         /// <summary>
