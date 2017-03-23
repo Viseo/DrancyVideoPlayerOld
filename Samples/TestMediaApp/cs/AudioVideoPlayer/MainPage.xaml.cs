@@ -157,7 +157,6 @@ namespace AudioVideoPlayer
             Application.Current.Suspending += Current_Suspending;
             Application.Current.Resuming += Current_Resuming;
 
-
             // Register Smooth Streaming component
             RegisterSmoothStreaming();
             // Register PlayReady component
@@ -172,6 +171,9 @@ namespace AudioVideoPlayer
             RegisterCompanion();
             // Initialize the Companion mode (Remote or Player)
             InitializeCompanionMode();
+
+            var existingVideoFile = await MediaDataSource.ExtractVideos();
+            LogMessage(existingVideoFile + " videos were found.");
 
             await SetConfigurationFiles();
 
@@ -1272,17 +1274,8 @@ namespace AudioVideoPlayer
                 int Index = comboStream.SelectedIndex;
                 Index = (Index + 1 >= comboStream.Items.Count ? 0 : ++Index);
                 comboStream.SelectedIndex = Index;
-                MediaItem ms = comboStream.SelectedItem as MediaItem;
-                if (ms != null)
-                {
-                    mediaUri.Text = ms.Content;
-                    PlayReadyLicenseUrl = ms.PlayReadyUrl;
-                    httpHeadersString = ms.HttpHeaders;
-                    httpHeaders = GetHttpHeaders(httpHeadersString);
-                    PlayReadyChallengeCustomData = ms.PlayReadyCustomData;
-                }
+                SetMediaUri();
                 PlayCurrentUrl();
-
             }
             catch (Exception ex)
             {
@@ -1304,20 +1297,25 @@ namespace AudioVideoPlayer
                 int Index = comboStream.SelectedIndex;
                 Index = (Index - 1 >= 0 ? --Index : comboStream.Items.Count - 1);
                 comboStream.SelectedIndex = Index;
-                MediaItem ms = comboStream.SelectedItem as MediaItem;
-                if (ms != null)
-                {
-                    mediaUri.Text = ms.Content;
-                    PlayReadyLicenseUrl = ms.PlayReadyUrl;
-                    httpHeadersString = ms.HttpHeaders;
-                    httpHeaders = GetHttpHeaders(httpHeadersString);
-                    PlayReadyChallengeCustomData = ms.PlayReadyCustomData;
-                }
+                SetMediaUri();
                 PlayCurrentUrl();
             }
             catch (Exception ex)
             {
                 LogMessage("Failed to to play: " + mediaUri.Text + " Exception: " + ex.Message);
+            }
+        }
+
+        private void SetMediaUri()
+        {
+            MediaItem ms = comboStream.SelectedItem as MediaItem;
+            if (ms != null)
+            {
+                mediaUri.Text = ms.Content;
+                PlayReadyLicenseUrl = ms.PlayReadyUrl;
+                httpHeadersString = ms.HttpHeaders;
+                httpHeaders = GetHttpHeaders(httpHeadersString);
+                PlayReadyChallengeCustomData = ms.PlayReadyCustomData;
             }
         }
 
@@ -3083,16 +3081,7 @@ namespace AudioVideoPlayer
                 {
                     await LoadingData(string.Empty);
                     comboStream.SelectedIndex = 0;
-                    MediaItem ms = comboStream.SelectedItem as MediaItem;
-                    if (ms != null)
-                    {
-                        mediaUri.Text = ms.Content;
-                        PlayReadyLicenseUrl = ms.PlayReadyUrl;
-                        httpHeadersString = ms.HttpHeaders;
-                        httpHeaders = GetHttpHeaders(httpHeadersString);
-
-                        PlayReadyChallengeCustomData = ms.PlayReadyCustomData;
-                    }
+                    SetMediaUri();
                 }
             }
             // Restore WindowState
